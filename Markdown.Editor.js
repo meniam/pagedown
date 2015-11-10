@@ -140,11 +140,11 @@
                     if (uiManager) // not available on the first call
                         uiManager.setUndoRedoButtonStates();
                 }, panels);
-                this.textOperation = function (f) {
-                    undoManager.setCommandMode();
-                    f();
-                    that.refreshPreview();
-                }
+                //this.textOperation = function (f) {
+                //    undoManager.setCommandMode();
+                //    f();
+                //    that.refreshPreview();
+                //}
             }
 
             uiManager = new UIManager(options, panels, undoManager, previewManager, commandManager, options.helpButton, getString);
@@ -493,10 +493,7 @@
         };
 
         this.canRedo = function () {
-            if (undoStack[stackPtr + 1]) {
-                return true;
-            }
-            return false;
+            return !!undoStack[stackPtr + 1];
         };
 
         // Removes the last state and restores it.
@@ -603,7 +600,7 @@
                     window.event.returnValue = false;
                 }
 
-                return;
+                return null;
             }
         };
 
@@ -1411,7 +1408,6 @@
             var buttonRow = document.createElement("div");
             buttonRow.className = 'btn-toolbar';
             buttonRow = buttonBar.appendChild(buttonRow);
-            var xPosition = 0;
 
             var makeGroup = function (num) {
                 var group = document.createElement("div");
