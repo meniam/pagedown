@@ -4,18 +4,41 @@
 
     <head>
         <title>PageDown Demo Page</title>
-        
+
+
+        <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
         <link rel="stylesheet" type="text/css" href="demo.css" />
-        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
         <script type="text/javascript" src="../../Markdown.Converter.js"></script>
         <script type="text/javascript" src="../../Markdown.Sanitizer.js"></script>
         <script type="text/javascript" src="../../Markdown.Editor.js"></script>
+
+        <style>
+            .btn-toolbar .btn{
+                border: none !important;
+                padding: 6px 8px !important;;
+            }
+
+            .btn-toolbar .btn:hover {
+
+                background: none !important;
+            }
+            .btn-toolbar .btn:hover i{
+                color: #FF9900 !important;
+            }
+
+
+        </style>
     </head>
     
     <body>
         <div class="wmd-panel">
-            <div id="wmd-button-bar"></div>
-            <textarea class="wmd-input" id="wmd-input">
+            <!--div id="wmd-button-bar" class="first-toolbar"></div-->
+            <textarea class="wmd-input first-input" id="wmd-input">
 This is the *first* editor.
 ------------------------------
 
@@ -34,7 +57,7 @@ Do it like this:
 """
 </textarea>
         </div>
-        <div id="wmd-preview" class="wmd-panel wmd-preview"></div>
+        <div id="wmd-preview" class="wmd-panel wmd-preview first-preview"></div>
         
         <br /> <br />
         
@@ -67,16 +90,27 @@ selection), this editor creates an example text that's different from the first 
             (function () {
                 var converter1 = Markdown.getSanitizingConverter();
                 
-                converter1.hooks.chain("preBlockGamut", function (text, rbg) {
+                /*converter1.hooks.chain("preBlockGamut", function (text, rbg) {
                     return text.replace(/^ {0,3}""" *\n((?:.*?\n)+?) {0,3}""" *$/gm, function (whole, inner) {
                         return "<blockquote>" + rbg(inner) + "</blockquote>\n";
                     });
+                });*/
+
+                converter1.hooks.chain("preBlockGamut", function (text, rbg) {
+                    return text.replace(/^ {0,3}"""((?:.*?\n)+?) {0,3}\* *$/gm, function (whole, inner) {
+                        return "<blockquote>" + rbg(inner) + "</blockquote>\n";
+                    });
+                });
+
+                var editor1 = new Markdown.Editor(converter1, {
+                    input_class : 'first-input',
+                    toolbar_class : 'first-toolbar',
+                    preview_class : 'first-preview'
+
                 });
                 
-                var editor1 = new Markdown.Editor(converter1);
-                
                 editor1.run();
-                
+                /*
                 var converter2 = new Markdown.Converter();
 
                 converter2.hooks.chain("preConversion", function (text) {
@@ -94,7 +128,7 @@ selection), this editor creates an example text that's different from the first 
                 };
                 var editor2 = new Markdown.Editor(converter2, "-second", options);
                 
-                editor2.run();
+                editor2.run();*/
             })();
         </script>
     </body>

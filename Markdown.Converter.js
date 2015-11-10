@@ -54,12 +54,11 @@ else
 (function () {
 
     function identity(x) { return x; }
-    function returnFalse(x) { return false; }
+    function returnFalse() { return false; }
 
     function HookCollection() { }
 
     HookCollection.prototype = {
-
         chain: function (hookname, func) {
             var original = this[hookname];
             if (!original)

@@ -1,57 +1,57 @@
 ﻿// needs Markdown.Converter.js at the moment
-
 (function () {
-
     var util = {},
         position = {},
         ui = {},
         doc = window.document,
         re = window.RegExp,
         nav = window.navigator,
-        SETTINGS = { lineLength: 72 },
+        SETTINGS = {lineLength: 72},
 
-    // Used to work around some browser bugs where we can't use feature testing.
+        // Used to work around some browser bugs where we can't use feature testing.
         uaSniffed = {
             isIE: /msie/.test(nav.userAgent.toLowerCase()),
             isIE_5or6: /msie 6/.test(nav.userAgent.toLowerCase()) || /msie 5/.test(nav.userAgent.toLowerCase()),
             isOpera: /opera/.test(nav.userAgent.toLowerCase())
         };
 
+    var isWin = /win/.test(nav.platform.toLowerCase());
+
     var defaultsStrings = {
-        bold: "Strong <strong> Ctrl+B",
-        boldexample: "strong text",
+        bold: "Жирный — " + (isWin ? 'Ctrl+B' : '⌘B'),
+        boldexample: "Текст, выделенный жирным",
 
-        italic: "Emphasis <em> Ctrl+I",
-        italicexample: "emphasized text",
+        italic: "Курсив — " + (isWin ? 'Ctrl+I' : '⌘I'),
+        italicexample: "Текст, выделенный жирным",
 
-        link: "Hyperlink <a> Ctrl+L",
-        linkdescription: "enter link description here",
-        linkdialog: "<p><b>Insert Hyperlink</b></p><p>http://example.com/ \"optional title\"</p>",
+        link: "Ссылка — " + (isWin ? 'Ctrl+L' : '⌘L'),
+        linkdescription: "Описание ссылки",
+        linkdialog: "<p><b>Вставить ссылку</b></p><p>http://yandex.ru/ \"Опциональная подсказка\"</p>",
 
-        quote: "Blockquote <blockquote> Ctrl+Q",
-        quoteexample: "Blockquote",
+        quote: "Цитата — " + (isWin ? 'Ctrl+Q' : '⌘Q'),
+        quoteexample: "Текст цитаты",
 
-        code: "Code Sample <pre><code> Ctrl+K",
-        codeexample: "enter code here",
+        code: "Пример кода — " + (isWin ? 'Ctrl+K' : '⌘K'),
+        codeexample: "Введите текст исходного кода",
 
-        image: "Image <img> Ctrl+G",
-        imagedescription: "enter image description here",
-        imagedialog: "<p><b>Insert Image</b></p><p>http://example.com/images/diagram.jpg \"optional title\"<br><br>Need <a href='http://www.google.com/search?q=free+image+hosting' target='_blank'>free image hosting?</a></p>",
+        image: "Изображение — " + (isWin ? 'Ctrl+G' : '⌘G'),
+        imagedescription: "Введите описание изображения",
+        imagedialog: "<p><b>Вставка изображения</b></p><p>http://example.com/images/diagram.jpg \"Опцианальная подсказка\"<br><br>Нужен <a href='http://www.google.com/search?q=бесплатный+хостинг+картинок' target='_blank'>бесплатный хостинг картинок?</a></p>",
 
-        olist: "Numbered List <ol> Ctrl+O",
-        ulist: "Bulleted List <ul> Ctrl+U",
-        litem: "List item",
+        olist: "Нумерованный список — " + (isWin ? 'Ctrl+O' : '⌘O'),
+        ulist: "Маркированный список — " + (isWin ? 'Ctrl+U' : '⌘U'),
+        litem: "Элемент списка",
 
-        heading: "Heading <h1>/<h2> Ctrl+H",
-        headingexample: "Heading",
+        heading: "Заголовок h1/h2 — " + (isWin ? 'Ctrl+H' : '⌘H'),
+        headingexample: "Заголовок",
 
-        hr: "Horizontal Rule <hr> Ctrl+R",
+        hr: "Горизонтальная черта — " + (isWin ? 'Ctrl+R' : '⌘R'),
 
-        undo: "Undo - Ctrl+Z",
-        redo: "Redo - Ctrl+Y",
-        redomac: "Redo - Ctrl+Shift+Z",
+        undo: "Отменить — " + (isWin ? 'Ctrl+Z' : '⌘Z'),
+        redo: "Повторить — Ctrl+Y",
+        redomac: "Повторить — ⇧⌘Z",
 
-        help: "Markdown Editing Help"
+        help: "Помощь"
     };
 
 
@@ -89,30 +89,35 @@
     // - getConverter() returns the markdown converter object that was passed to the constructor
     // - run() actually starts the editor; should be called after all necessary plugins are registered. Calling this more than once is a no-op.
     // - refreshPreview() forces the preview to be updated. This method is only available after run() was called.
-    Markdown.Editor = function (markdownConverter, idPostfix, options) {
-        
+    Markdown.Editor = function (markdownConverter, options) {
+
         options = options || {};
 
         if (typeof options.handler === "function") { //backwards compatible behavior
-            options = { helpButton: options };
+            options = {helpButton: options};
         }
+
         options.strings = options.strings || {};
         if (options.helpButton) {
             options.strings.help = options.strings.help || options.helpButton.title;
         }
-        var getString = function (identifier) { return options.strings[identifier] || defaultsStrings[identifier]; }
 
-        idPostfix = idPostfix || "";
+        var getString = function (identifier) {
+            return options.strings[identifier] || defaultsStrings[identifier];
+        };
 
         var hooks = this.hooks = new Markdown.HookCollection();
         hooks.addNoop("onPreviewRefresh");       // called with no arguments after the preview has been refreshed
         hooks.addNoop("postBlockquoteCreation"); // called with the user's selection *after* the blockquote was created; should return the actual to-be-inserted text
-        hooks.addFalse("insertImageDialog");     /* called with one parameter: a callback to be called with the URL of the image. If the application creates
-                                                  * its own image insertion dialog, this hook should return true, and the callback should be called with the chosen
-                                                  * image url (or null if the user cancelled). If this hook returns false, the default dialog will be used.
-                                                  */
+        hooks.addFalse("insertImageDialog");
+        /* called with one parameter: a callback to be called with the URL of the image. If the application creates
+         * its own image insertion dialog, this hook should return true, and the callback should be called with the chosen
+         * image url (or null if the user cancelled). If this hook returns false, the default dialog will be used.
+         */
 
-        this.getConverter = function () { return markdownConverter; }
+        this.getConverter = function () {
+            return markdownConverter;
+        };
 
         var that = this,
             panels;
@@ -121,10 +126,13 @@
             if (panels)
                 return; // already initialized
 
-            panels = new PanelCollection(idPostfix);
-            var commandManager = new CommandManager(hooks, getString, markdownConverter);
-            var previewManager = new PreviewManager(markdownConverter, panels, function () { hooks.onPreviewRefresh(); });
+            panels = new PanelCollection(options);
+
             var undoManager, uiManager;
+            var commandManager = new CommandManager(hooks, getString, markdownConverter);
+            var previewManager = new PreviewManager(markdownConverter, panels, function () {
+                hooks.onPreviewRefresh();
+            });
 
             if (!/\?noundo/.test(doc.location.href)) {
                 undoManager = new UndoManager(function () {
@@ -139,15 +147,17 @@
                 }
             }
 
-            uiManager = new UIManager(idPostfix, panels, undoManager, previewManager, commandManager, options.helpButton, getString);
+            uiManager = new UIManager(options, panels, undoManager, previewManager, commandManager, options.helpButton, getString);
             uiManager.setUndoRedoButtonStates();
 
-            var forceRefresh = that.refreshPreview = function () { previewManager.refresh(true); };
+            var forceRefresh = that.refreshPreview = function () {
+                previewManager.refresh(true);
+            };
 
             forceRefresh();
         };
 
-    }
+    };
 
     // before: contains all the text in the input box BEFORE the selection.
     // after: contains all the text in the input box AFTER the selection.
@@ -156,14 +166,11 @@
     // startRegex: a regular expression to find the start tag
     // endRegex: a regular expresssion to find the end tag
     Chunks.prototype.findTags = function (startRegex, endRegex) {
-
         var chunkObj = this;
         var regex;
 
         if (startRegex) {
-
             regex = util.extendRegExp(startRegex, "", "$");
-
             this.before = this.before.replace(regex,
                 function (match) {
                     chunkObj.startTag = chunkObj.startTag + match;
@@ -180,7 +187,6 @@
         }
 
         if (endRegex) {
-
             regex = util.extendRegExp(endRegex, "", "$");
 
             this.selection = this.selection.replace(regex,
@@ -208,16 +214,22 @@
         if (remove) {
             beforeReplacer = afterReplacer = "";
         } else {
-            beforeReplacer = function (s) { that.before += s; return ""; }
-            afterReplacer = function (s) { that.after = s + that.after; return ""; }
+            beforeReplacer = function (s) {
+                that.before += s;
+                return "";
+            };
+            afterReplacer = function (s) {
+                that.after = s + that.after;
+                return "";
+            };
         }
 
         this.selection = this.selection.replace(/^(\s*)/, beforeReplacer).replace(/(\s*)$/, afterReplacer);
     };
 
 
-    Chunks.prototype.skipLines = function (nLinesBefore, nLinesAfter, findExtraNewlines) {
-
+    Chunks.prototype.skipLines = function (nLinesBefore, nLinesAfter, findExtraNewlines)
+    {
         if (nLinesBefore === undefined) {
             nLinesBefore = 1;
         }
@@ -238,7 +250,6 @@
         }
 
         this.selection = this.selection.replace(/(^\n*)/, "");
-
         this.startTag = this.startTag + re.$1;
 
         this.selection = this.selection.replace(/(\n*$)/, "");
@@ -249,7 +260,6 @@
         this.after = this.after + re.$1;
 
         if (this.before) {
-
             regexText = replacementText = "";
 
             while (nLinesBefore--) {
@@ -264,7 +274,6 @@
         }
 
         if (this.after) {
-
             regexText = replacementText = "";
 
             while (nLinesAfter--) {
@@ -297,26 +306,20 @@
     // This ONLY affects Internet Explorer (tested on versions 6, 7
     // and 8) and ONLY on button clicks.  Keyboard shortcuts work
     // normally since the focus never leaves the textarea.
-    function PanelCollection(postfix) {
-        this.buttonBar = doc.getElementById("wmd-button-bar" + postfix);
-        this.preview = doc.getElementById("wmd-preview" + postfix);
-        this.input = doc.getElementById("wmd-input" + postfix);
-    };
+    function PanelCollection(options) {
+        this.preview = doc.getElementsByClassName(options.preview_class)[0];
+        this.input = doc.getElementsByClassName(options.input_class)[0];
+
+        this.buttonBar = doc.createElement("div");
+        this.buttonBar.className = "wmd-button-bar";
+        this.input.parentNode.insertBefore(this.buttonBar, this.input);
+    }
 
     // Returns true if the DOM element is visible, false if it's hidden.
     // Checks if display is anything other than none.
     util.isVisible = function (elem) {
-
-        if (window.getComputedStyle) {
-            // Most browsers
-            return window.getComputedStyle(elem, null).getPropertyValue("display") !== "none";
-        }
-        else if (elem.currentStyle) {
-            // IE
-            return elem.currentStyle["display"] !== "none";
-        }
+        return $(elem).is(':visible');
     };
-
 
     // Adds a listener callback to a DOM element which is fired on a specified
     // event.
@@ -324,8 +327,7 @@
         if (elem.attachEvent) {
             // IE only.  The "on" is mandatory.
             elem.attachEvent("on" + event, listener);
-        }
-        else {
+        } else {
             // Other browsers.
             elem.addEventListener(event, listener, false);
         }
@@ -370,7 +372,7 @@
         }
 
         var pattern = regex.toString();
-        var flags;
+        var flags = null;
 
         // Replace the flags with empty space and store them.
         pattern = pattern.replace(/\/([gim]*)$/, function (wholeMatch, flagsPart) {
@@ -383,7 +385,7 @@
         pattern = pre + pattern + post;
 
         return new re(pattern, flags);
-    }
+    };
 
     // UNFINISHED
     // The assignment in the while loop makes jslint cranky.
@@ -600,6 +602,7 @@
                 if (window.event) {
                     window.event.returnValue = false;
                 }
+
                 return;
             }
         };
@@ -701,7 +704,7 @@
                 this.text = inputArea.value;
             }
 
-        }
+        };
 
         // Sets the selected text in the input box after we've performed an
         // operation.
@@ -783,8 +786,8 @@
         };
 
         // Restore this state into the input area.
-        this.restore = function () {
-
+        this.restore = function ()
+        {
             if (stateObj.text != undefined && stateObj.text != inputArea.value) {
                 inputArea.value = stateObj.text;
             }
@@ -793,8 +796,8 @@
         };
 
         // Gets a collection of HTML chunks from the inptut textarea.
-        this.getChunks = function () {
-
+        this.getChunks = function ()
+        {
             var chunk = new Chunks();
             chunk.before = util.fixEolChars(stateObj.text.substring(0, stateObj.start));
             chunk.startTag = "";
@@ -818,11 +821,10 @@
             this.scrollTop = chunk.scrollTop;
         };
         this.init();
-    };
+    }
 
-    function PreviewManager(converter, panels, previewRefreshCallback) {
-
-        var managerObj = this;
+    function PreviewManager(converter, panels, previewRefreshCallback)
+    {
         var timeout;
         var elapsedTime;
         var oldInputText;
@@ -847,14 +849,12 @@
             if (window.innerHeight) {
                 result = window.pageYOffset;
             }
-            else
-                if (doc.documentElement && doc.documentElement.scrollTop) {
-                    result = doc.documentElement.scrollTop;
-                }
-                else
-                    if (doc.body) {
-                        result = doc.body.scrollTop;
-                    }
+            else if (doc.documentElement && doc.documentElement.scrollTop) {
+                result = doc.documentElement.scrollTop;
+            }
+            else if (doc.body) {
+                result = doc.body.scrollTop;
+            }
 
             return result;
         };
@@ -863,9 +863,9 @@
 
             // If there is no registered preview panel
             // there is nothing to do.
-            if (!panels.preview)
+            if (!panels.preview) {
                 return;
-
+            }
 
             var text = panels.input.value;
             if (text && text == oldInputText) {
@@ -953,11 +953,11 @@
                 parent.appendChild(preview);
             else
                 parent.insertBefore(preview, sibling);
-        }
+        };
 
         var nonSuckyBrowserPreviewSet = function (text) {
             panels.preview.innerHTML = text;
-        }
+        };
 
         var previewSetter;
 
@@ -1003,7 +1003,6 @@
         };
 
         var init = function () {
-
             setupEvents(panels.input, applyTimeout);
             makePreviewHtml();
 
@@ -1013,7 +1012,7 @@
         };
 
         init();
-    };
+    }
 
     // Creates the background behind the hyperlink text entry box.
     // And download dialog
@@ -1023,9 +1022,9 @@
 
         var background = doc.createElement("div"),
             style = background.style;
-        
+
         background.className = "wmd-prompt-background";
-        
+
         style.position = "absolute";
         style.top = "0";
 
@@ -1109,7 +1108,6 @@
         };
 
 
-
         // Create the text input box form/window.
         var createDialog = function () {
 
@@ -1130,7 +1128,9 @@
             // The web form container for the text box and buttons.
             var form = doc.createElement("form"),
                 style = form.style;
-            form.onsubmit = function () { return close(false); };
+            form.onsubmit = function () {
+                return close(false);
+            };
             style.padding = "0";
             style.margin = "0";
             style.cssFloat = "left";
@@ -1152,7 +1152,9 @@
             // The ok button
             var okButton = doc.createElement("input");
             okButton.type = "button";
-            okButton.onclick = function () { return close(false); };
+            okButton.onclick = function () {
+                return close(false);
+            };
             okButton.value = "OK";
             style = okButton.style;
             style.margin = "10px";
@@ -1163,7 +1165,9 @@
             // The cancel button
             var cancelButton = doc.createElement("input");
             cancelButton.type = "button";
-            cancelButton.onclick = function () { return close(true); };
+            cancelButton.onclick = function () {
+                return close(true);
+            };
             cancelButton.value = "Cancel";
             style = cancelButton.style;
             style.margin = "10px";
@@ -1214,7 +1218,7 @@
         }, 0);
     };
 
-    function UIManager(postfix, panels, undoManager, previewManager, commandManager, helpOptions, getString) {
+    function UIManager(options, panels, undoManager, previewManager, commandManager, helpOptions, getString) {
 
         var inputBox = panels.input,
             buttons = {}; // buttons.undo, buttons.link, etc. The actual DOM elements.
@@ -1317,11 +1321,9 @@
 
         // Perform the button's action.
         function doClick(button) {
-
             inputBox.focus();
 
             if (button.textOp) {
-
                 if (undoManager) {
                     undoManager.setCommandMode();
                 }
@@ -1374,36 +1376,12 @@
             if (button.execute) {
                 button.execute(undoManager);
             }
-        };
+        }
 
-        function setupButton(button, isEnabled) {
-
-            var normalYShift = "0px";
-            var disabledYShift = "-20px";
-            var highlightYShift = "-40px";
-            var image = button.getElementsByTagName("span")[0];
+        function setupButton(button, isEnabled)
+        {
             if (isEnabled) {
-                image.style.backgroundPosition = button.XShift + " " + normalYShift;
-                button.onmouseover = function () {
-                    image.style.backgroundPosition = this.XShift + " " + highlightYShift;
-                };
-
-                button.onmouseout = function () {
-                    image.style.backgroundPosition = this.XShift + " " + normalYShift;
-                };
-
-                // IE tries to select the background image "button" text (it's
-                // implemented in a list item) so we have to cache the selection
-                // on mousedown.
-                if (uaSniffed.isIE) {
-                    button.onmousedown = function () {
-                        if (doc.activeElement && doc.activeElement !== panels.input) { // we're not even in the input box, so there's no selection
-                            return;
-                        }
-                        panels.ieCachedRange = document.selection.createRange();
-                        panels.ieCachedScrollTop = panels.input.scrollTop;
-                    };
-                }
+                button.disabled = false;
 
                 if (!button.isHelp) {
                     button.onclick = function () {
@@ -1414,103 +1392,122 @@
                         return false;
                     }
                 }
-            }
-            else {
-                image.style.backgroundPosition = button.XShift + " " + disabledYShift;
-                button.onmouseover = button.onmouseout = button.onclick = function () { };
+            } else {
+                button.disabled = true;
             }
         }
 
         function bindCommand(method) {
             if (typeof method === "string")
                 method = commandManager[method];
-            return function () { method.apply(commandManager, arguments); }
+            return function () {
+                method.apply(commandManager, arguments);
+            }
         }
 
         function makeSpritedButtonRow() {
-
             var buttonBar = panels.buttonBar;
 
-            var normalYShift = "0px";
-            var disabledYShift = "-20px";
-            var highlightYShift = "-40px";
-
-            var buttonRow = document.createElement("ul");
-            buttonRow.id = "wmd-button-row" + postfix;
-            buttonRow.className = 'wmd-button-row';
+            var buttonRow = document.createElement("div");
+            buttonRow.className = 'btn-toolbar';
             buttonRow = buttonBar.appendChild(buttonRow);
             var xPosition = 0;
-            var makeButton = function (id, title, XShift, textOp) {
-                var button = document.createElement("li");
-                button.className = "wmd-button";
-                button.style.left = xPosition + "px";
-                xPosition += 25;
-                var buttonImage = document.createElement("span");
-                button.id = id + postfix;
+
+            var makeGroup = function (num) {
+                var group = document.createElement("div");
+                group.className = "btn-group wmd-button-group" + num;
+                buttonRow.appendChild(group);
+                return group;
+            };
+
+            var makeButton = function (id, title, icon, textOp, panel) {
+                var button = document.createElement("button");
+                button.className = "btn btn-default";
+
+                var buttonImage = document.createElement("i");
+                buttonImage.className = icon;
                 button.appendChild(buttonImage);
                 button.title = title;
-                button.XShift = XShift;
-                if (textOp)
-                    button.textOp = textOp;
-                setupButton(button, true);
-                buttonRow.appendChild(button);
-                return button;
-            };
-            var makeSpacer = function (num) {
-                var spacer = document.createElement("li");
-                spacer.className = "wmd-spacer wmd-spacer" + num;
-                spacer.id = "wmd-spacer" + num + postfix;
-                buttonRow.appendChild(spacer);
-                xPosition += 25;
-            }
 
-            buttons.bold = makeButton("wmd-bold-button", getString("bold"), "0px", bindCommand("doBold"));
-            buttons.italic = makeButton("wmd-italic-button", getString("italic"), "-20px", bindCommand("doItalic"));
-            makeSpacer(1);
-            buttons.link = makeButton("wmd-link-button", getString("link"), "-40px", bindCommand(function (chunk, postProcessing) {
-                return this.doLinkOrImage(chunk, postProcessing, false);
-            }));
-            buttons.quote = makeButton("wmd-quote-button", getString("quote"), "-60px", bindCommand("doBlockquote"));
-            buttons.code = makeButton("wmd-code-button", getString("code"), "-80px", bindCommand("doCode"));
-            buttons.image = makeButton("wmd-image-button", getString("image"), "-100px", bindCommand(function (chunk, postProcessing) {
-                return this.doLinkOrImage(chunk, postProcessing, true);
-            }));
-            makeSpacer(2);
-            buttons.olist = makeButton("wmd-olist-button", getString("olist"), "-120px", bindCommand(function (chunk, postProcessing) {
-                this.doList(chunk, postProcessing, true);
-            }));
-            buttons.ulist = makeButton("wmd-ulist-button", getString("ulist"), "-140px", bindCommand(function (chunk, postProcessing) {
+                if (textOp) {
+                    button.textOp = textOp;
+                }
+
+                setupButton(button, true);
+
+                if (panel) {
+                    panel.appendChild(button);
+                } else {
+                    buttonRow.appendChild(button);
+                }
+
+                return button;
+
+            };
+
+            var group1 = makeGroup(1);
+            buttons.bold = makeButton("wmd-bold-button", getString("bold"), "fa fa-bold", bindCommand("doBold"), group1);
+            buttons.italic = makeButton("wmd-italic-button", getString("italic"), "fa fa-italic", bindCommand("doItalic"), group1);
+
+            var headingPanel = makeGroup(5);
+
+            buttons.heading = makeButton("wmd-heading-button", getString("heading"), "fa fa-header", bindCommand("doHeading"), headingPanel);
+            buttons.hr = makeButton("wmd-hr-button", getString("hr"),  "fa fa-ellipsis-h", bindCommand("doHorizontalRule"), headingPanel);
+
+            var listPanel = makeGroup(3);
+            buttons.ulist = makeButton("wmd-ulist-button", getString("ulist"), "fa fa-list-ul", bindCommand(function (chunk, postProcessing) {
                 this.doList(chunk, postProcessing, false);
-            }));
-            buttons.heading = makeButton("wmd-heading-button", getString("heading"), "-160px", bindCommand("doHeading"));
-            buttons.hr = makeButton("wmd-hr-button", getString("hr"), "-180px", bindCommand("doHorizontalRule"));
-            makeSpacer(3);
-            buttons.undo = makeButton("wmd-undo-button", getString("undo"), "-200px", null);
-            buttons.undo.execute = function (manager) { if (manager) manager.undo(); };
+            }), listPanel);
+            buttons.olist = makeButton("wmd-olist-button", getString("olist"), "fa fa-list-ol", bindCommand(function (chunk, postProcessing) {
+                this.doList(chunk, postProcessing, true);
+            }), listPanel);
+            buttons.quote = makeButton("wmd-quote-button", getString("quote"), "fa fa-quote-right", bindCommand("doBlockquote"), listPanel);
+
+            var group2 = makeGroup(2);
+
+            buttons.code = makeButton("wmd-code-button", getString("code"), "fa fa-code", bindCommand("doCode"), group2);
+            buttons.link = makeButton("wmd-link-button", getString("link"), "fa fa-link", bindCommand(function (chunk, postProcessing) {
+                return this.doLinkOrImage(chunk, postProcessing, false);
+            }), group2);
+            buttons.image = makeButton("wmd-image-button", getString("image"), "fa fa-file-image-o", bindCommand(function (chunk, postProcessing) {
+                return this.doLinkOrImage(chunk, postProcessing, true);
+            }), group2);
+
+
+            var historyPanel = makeGroup(4);
+            buttons.undo = makeButton("wmd-undo-button", getString("undo"), "fa fa-undo", null, historyPanel);
+            buttons.undo.execute = function (manager) {
+                if (manager) {
+                    manager.undo();
+                }
+            };
 
             var redoTitle = /win/.test(nav.platform.toLowerCase()) ?
                 getString("redo") :
                 getString("redomac"); // mac and other non-Windows platforms
 
-            buttons.redo = makeButton("wmd-redo-button", redoTitle, "-220px", null);
-            buttons.redo.execute = function (manager) { if (manager) manager.redo(); };
-
-            if (helpOptions) {
-                var helpButton = document.createElement("li");
-                var helpButtonImage = document.createElement("span");
-                helpButton.appendChild(helpButtonImage);
-                helpButton.className = "wmd-button wmd-help-button";
-                helpButton.id = "wmd-help-button" + postfix;
-                helpButton.XShift = "-240px";
-                helpButton.isHelp = true;
-                helpButton.style.right = "0px";
-                helpButton.title = getString("help");
-                helpButton.onclick = helpOptions.handler;
-
-                setupButton(helpButton, true);
-                buttonRow.appendChild(helpButton);
-                buttons.help = helpButton;
-            }
+            buttons.redo = makeButton("wmd-redo-button", redoTitle, "fa fa-repeat", null, historyPanel);
+            buttons.redo.execute = function (manager) {
+                if (manager) {
+                    manager.redo();
+                }
+            };
+            //
+            //if (helpOptions) {
+            //    var helpButton = document.createElement("li");
+            //    var helpButtonImage = document.createElement("span");
+            //    helpButton.appendChild(helpButtonImage);
+            //    helpButton.className = "wmd-button wmd-help-button";
+            //    helpButton.XShift = "-240px";
+            //    helpButton.isHelp = true;
+            //    helpButton.style.right = "0px";
+            //    helpButton.title = getString("help");
+            //    helpButton.onclick = helpOptions.handler;
+            //
+            //    setupButton(helpButton, true);
+            //    buttonRow.appendChild(helpButton);
+            //    buttons.help = helpButton;
+            //}
 
             setUndoRedoButtonStates();
         }
@@ -1520,10 +1517,9 @@
                 setupButton(buttons.undo, undoManager.canUndo());
                 setupButton(buttons.redo, undoManager.canRedo());
             }
-        };
+        }
 
         this.setUndoRedoButtonStates = setUndoRedoButtonStates;
-
     }
 
     function CommandManager(pluginHooks, getString, converter) {
@@ -1608,8 +1604,6 @@
             chunk.before = chunk.before + markup;
             chunk.after = markup + chunk.after;
         }
-
-        return;
     };
 
     commandProto.stripLinkDefs = function (text, defsToAdd) {
@@ -1639,7 +1633,7 @@
 
         var defs = "";
         var regex = /(\[)((?:\[[^\]]*\]|[^\[\]])*)(\][ ]?(?:\n[ ]*)?\[)(\d+)(\])/g;
-        
+
         // The above regex, used to update [foo][13] references after renumbering,
         // is much too liberal; it can catch things that are not actually parsed
         // as references (notably: code). It's impossible to know which matches are
@@ -1653,7 +1647,7 @@
         var complete = chunk.before + chunk.selection + chunk.after;
         var rendered = this.converter.makeHtml(complete);
         var testlink = "http://this-is-a-real-link.biz/";
-        
+
         // If our fake link appears in the rendered version *before* we have added it,
         // this probably means you're a Meta Stack Exchange user who is deliberately
         // trying to break this feature. You can still break this workaround if you
@@ -1661,7 +1655,7 @@
         // that case, consider yourself unsupported.
         while (rendered.indexOf(testlink) != -1)
             testlink += "nicetry/";
-        
+
         var fakedefs = "\n\n";
 
         // the regex is tested on the (up to) three chunks separately, and on substrings,
@@ -1682,13 +1676,13 @@
             skippedChars -= offset;
             return result;
         });
-        
+
         rendered = this.converter.makeHtml(uniquified + fakedefs);
-        
-        var okayToModify = function(offset) {
+
+        var okayToModify = function (offset) {
             return rendered.indexOf(testlink + offset + "/unicorn") !== -1;
-        }
-        
+        };
+
         var addDefNumber = function (def) {
             refNumber++;
             def = def.replace(/^[ ]{0,3}\[(\d+)\]:/, "  [" + refNumber + "]:");
@@ -1716,7 +1710,7 @@
         var len = chunk.before.length;
         chunk.before = chunk.before.replace(regex, getLink);
         skippedChars += len;
-        
+
         len = chunk.selection.length;
         if (linkDef) {
             addDefNumber(linkDef);
@@ -1724,7 +1718,7 @@
         else {
             chunk.selection = chunk.selection.replace(regex, getLink);
         }
-        skippedChars += len;        
+        skippedChars += len;
 
         var refOut = refNumber;
 
@@ -1746,7 +1740,7 @@
     // sure the URL and the optinal title are "nice".
     function properlyEncoded(linkdef) {
         return linkdef.replace(/^\s*(.*?)(?:\s+"(.+)")?\s*$/, function (wholematch, link, title) {
-            
+
             var inQueryString = false;
 
             // Having `[^\w\d-./]` in there is just a shortcut that lets us skip
@@ -1757,7 +1751,7 @@
             // a strange beast in URLs, but if anything, this causes URLs to be more readable,
             // and we leave it to the browser to make sure that these links are handled without
             // problems.
-            link = link.replace(/%(?:[\da-fA-F]{2})|\?|\+|[^\w\d-./[\]]/g, function (match) {
+            link = link.replace(/%(?:[\da-fA-F]{2})|\?|\+|[^-\w\d./[\]]/g, function (match) {
                 // Valid percent encoding. Could just return it as is, but we follow RFC3986
                 // Section 2.1 which says "For consistency, URI producers and normalizers
                 // should use uppercase hexadecimal digits for all percent-encodings."
@@ -1771,7 +1765,7 @@
                         inQueryString = true;
                         return "?";
                         break;
-                    
+
                     // In the query string, a plus and a space are identical -- normalize.
                     // Not strictly necessary, but identical behavior to the previous version
                     // of this function.
@@ -1781,12 +1775,13 @@
                         break;
                 }
                 return encodeURI(match);
-            })
-            
+            });
+
             if (title) {
                 title = title.trim ? title.trim() : title.replace(/^\s*/, "").replace(/\s*$/, "");
                 title = title.replace(/"/g, "quot;").replace(/\(/g, "&#40;").replace(/\)/g, "&#41;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             }
+
             return title ? link + ' "' + title + '"' : link;
         });
     }
@@ -1805,7 +1800,7 @@
 
         }
         else {
-            
+
             // We're moving start and end tag back into the selection, since (as we're in the else block) we're not
             // *removing* a link, but *adding* one, so whatever findTags() found is now back to being part of the
             // link text. linkEnteredCallback takes care of escaping any brackets.
@@ -1843,7 +1838,7 @@
                     // would mean a zero-width match at the start. Since zero-width matches advance the string position,
                     // the first bracket could then not act as the "not a backslash" for the second.
                     chunk.selection = (" " + chunk.selection).replace(/([^\\](?:\\\\)*)(?=[[\]])/g, "$1\\").substr(1);
-                    
+
                     var linkDef = " [999]: " + properlyEncoded(link);
 
                     var num = that.addLinkDef(chunk, linkDef);
@@ -1885,7 +1880,7 @@
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}([*+-]|\d+[.])[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ ]{0,3}>[ \t]*\n$/, "\n\n");
         chunk.before = chunk.before.replace(/(\n|^)[ \t]+\n$/, "\n\n");
-        
+
         // There's no selection, end the cursor wasn't at the end of the line:
         // The user wants to split the current list item / code line / blockquote line
         // (for the latter it doesn't really matter) in two. Temporarily select the
@@ -1913,7 +1908,7 @@
                 commandMgr.doCode(chunk);
             }
         }
-        
+
         if (fakeSelection) {
             chunk.after = chunk.selection + chunk.after;
             chunk.selection = "";
@@ -1942,15 +1937,15 @@
         // text *directly before* the selection already was a blockquote:
 
         /*
-        if (chunk.before) {
-        chunk.before = chunk.before.replace(/\n?$/, "\n");
-        }
-        chunk.before = chunk.before.replace(/(((\n|^)(\n[ \t]*)*>(.+\n)*.*)+(\n[ \t]*)*$)/,
-        function (totalMatch) {
-        chunk.startTag = totalMatch;
-        return "";
-        });
-        */
+         if (chunk.before) {
+         chunk.before = chunk.before.replace(/\n?$/, "\n");
+         }
+         chunk.before = chunk.before.replace(/(((\n|^)(\n[ \t]*)*>(.+\n)*.*)+(\n[ \t]*)*$)/,
+         function (totalMatch) {
+         chunk.startTag = totalMatch;
+         return "";
+         });
+         */
 
         // This comes down to:
         // Go backwards as many lines a possible, such that each line
@@ -2057,10 +2052,10 @@
 
         if (!/\n/.test(chunk.selection)) {
             chunk.selection = chunk.selection.replace(/^(> *)/,
-            function (wholeMatch, blanks) {
-                chunk.startTag += blanks;
-                return "";
-            });
+                function (wholeMatch, blanks) {
+                    chunk.startTag += blanks;
+                    return "";
+                });
         }
     };
 
@@ -2233,7 +2228,6 @@
     };
 
     commandProto.doHeading = function (chunk, postProcessing) {
-
         // Remove leading/trailing whitespace and reduce internal spaces to single spaces.
         chunk.selection = chunk.selection.replace(/\s+/g, " ");
         chunk.selection = chunk.selection.replace(/(^\s+|\s+$)/g, "");
@@ -2296,6 +2290,4 @@
         chunk.selection = "";
         chunk.skipLines(2, 1, true);
     }
-
-
 })();
